@@ -1,5 +1,7 @@
 package com.Icedreammoon.TouhouHisoutensoku.entity.Marisa;
 
+import com.Icedreammoon.TouhouHisoutensoku.tool.ControlledAnimation;
+import com.Icedreammoon.TouhouHisoutensoku.utils.TTZDamageTypes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -38,18 +40,19 @@ public class MasterSpark extends Entity {
     public float prevYaw, prevPitch; // 上一帧渲染角度（平滑渲染）
     public boolean on = true; // 激光开启状态（核心开关，控制逻辑执行）
     public Direction blockSide = null; // 碰撞到的方块朝向（用于粒子生成/方块交互的精准定位）
+    public ControlledAnimation appear = new ControlledAnimation(20);
 
     // 旋转角度（服务端计算，同步给客户端用于渲染/终点计算）
-    private static final EntityDataAccessor<Float> YAW = SynchedEntityData.defineId(...);
-    private static final EntityDataAccessor<Float> PITCH = SynchedEntityData.defineId(...);
+    private static final EntityDataAccessor<Float> YAW = SynchedEntityData.defineId(MasterSpark.class, net.minecraft.network.syncher.EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<Float> PITCH = SynchedEntityData.defineId(MasterSpark.class, net.minecraft.network.syncher.EntityDataSerializers.FLOAT);
     // 激光持续时间（帧数，控制激光存活时长）
-    private static final EntityDataAccessor<Integer> DURATION = SynchedEntityData.defineId(...);
+    private static final EntityDataAccessor<Integer> DURATION = SynchedEntityData.defineId(MasterSpark.class, net.minecraft.network.syncher.EntityDataSerializers.INT);
     // 施法者ID（客户端无法直接持有实体引用，通过ID获取施法者）
-    private static final EntityDataAccessor<Integer> CASTER = SynchedEntityData.defineId(...);
+    private static final EntityDataAccessor<Integer> CASTER = SynchedEntityData.defineId(MasterSpark.class, net.minecraft.network.syncher.EntityDataSerializers.INT);
     // 基础伤害（固定值）
-    private static final EntityDataAccessor<Float> DAMAGE = SynchedEntityData.defineId(...);
+    private static final EntityDataAccessor<Float> DAMAGE = SynchedEntityData.defineId(MasterSpark.class, net.minecraft.network.syncher.EntityDataSerializers.FLOAT);
     // 百分比伤害（基于目标最大生命值，%值）
-    private static final EntityDataAccessor<Float> HPDAMAGE = SynchedEntityData.defineId(...);
+    private static final EntityDataAccessor<Float> HPDAMAGE = SynchedEntityData.defineId(MasterSpark.class, net.minecraft.network.syncher.EntityDataSerializers.FLOAT);
 
     @OnlyIn(Dist.CLIENT)
     private Vec3[] attractorPos; // 粒子吸引点位置（用于激光粒子的聚合效果，客户端视觉专属）
@@ -61,7 +64,7 @@ public class MasterSpark extends Entity {
             attractorPos = new Vec3[] {new Vec3(0, 0, 0)}; // 客户端仅初始化粒子属性
         }
     }
-    public Death_Laser_Beam_Entity(EntityType<? extends ...> type, Level world, LivingEntity caster,
+    public MasterSpark(EntityType<? extends MasterSpark> type, Level world, LivingEntity caster,
                                    double x, double y, double z, float yaw, float pitch,
                                    int duration,float damage,float Hpdamage) {
         this(type, world); // 调用无参构造，初始化基础属性
@@ -109,15 +112,15 @@ public class MasterSpark extends Entity {
         }
 
 //        // 步骤5：激光关闭且动画结束 → 销毁实体（生命周期管理）
-//        if (!on && appear.getTimer() == 0) {
-//            this.discard();
-//        }
-//        // 步骤6：控制激光显隐动画（开启=渐显，关闭=渐隐）
-//        if (on && tickCount > 20) {
-//            appear.increaseTimer(); // 20帧预热后渐显（避免刚创建就有效果）
-//        } else {
-//            appear.decreaseTimer(); // 关闭后渐隐
-//        }
+        if (!on && tickCount > (20 + getDuration() + 20)) {
+            this.discard();
+        }
+
+        if (on && tickCount > 20) {
+            appear.increaseTimer(); // 渐显
+        } else {
+            appear.decreaseTimer(); // 渐隐
+        }
 
         // 步骤7：施法者死亡 → 立即销毁激光（安全兜底，避免无主激光存在）
         if (caster != null && !caster.isAlive()) discard();
@@ -126,12 +129,12 @@ public class MasterSpark extends Entity {
         if (tickCount > 20) {
             this.calculateEndPos(); // 实时计算激光理论终点（跟随施法者角度变化）
             // 射线检测：获取激光路径上的实体/方块碰撞结果
-            List<LivingEntity> hit = raytraceEntities(...).entities;
+
+            List<LivingEntity> hit = raytraceEntities(level(), new Vec3(getX(), getY(), getZ()), new Vec3(endPosX, endPosY, endPosZ), false, true, true).entities;
 
             // 子步骤8.1：碰撞到方块 → 执行方块交互+粒子生成
             if (blockSide != null) {
                 if (!this.level().isClientSide) { // 服务端执行方块交互
-                    // 破坏自定义玻璃标签的方块（MC_GLASS）
                     for (BlockPos pos : BlockPos.betweenClosed(Mth.floor(collidePosX - 0.5F), Mth.floor(collidePosY - 0.5F), Mth.floor(collidePosZ - 0.5F), Mth.floor(collidePosX + 0.5F), Mth.floor(collidePosY + 0.5F), Mth.floor(collidePosZ + 0.5F))) {
                         BlockState block = level().getBlockState(pos);
                         if (!block.isAir() && block.is(BlockTags.LOGS) && net.minecraftforge.event.ForgeEventFactory.getMobGriefingEvent(this.level(), this)) {
@@ -149,7 +152,7 @@ public class MasterSpark extends Entity {
                         if (!this.caster.isAlliedTo(target) && target != caster) {
                             // 伤害计算公式：基础伤害 + 最小(基础伤害, 目标最大生命值*百分比伤害*0.01)
                             // 加Math.min是为了限制百分比伤害的上限，避免伤害过高
-                            boolean flag = target.hurt(CMDamageTypes.causeDeathLaserDamage(this, caster),
+                            boolean flag = target.hurt(TTZDamageTypes.causeMagicDamage( this, caster),
                                     (float) (this.getDamage() + Math.min(this.getDamage(), target.getMaxHealth() * this.getHpDamage() * 0.01)));
                         }
                     }
@@ -324,4 +327,5 @@ public class MasterSpark extends Entity {
             entities.add(entity);
         }
     }
+
 }

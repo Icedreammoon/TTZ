@@ -1,5 +1,6 @@
 package com.Icedreammoon.TouhouHisoutensoku;
 
+import com.Icedreammoon.TouhouHisoutensoku.init.ModEntities;
 import com.mojang.logging.LogUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.world.level.block.Blocks;
@@ -33,7 +34,8 @@ public class TouhouHisoutensoku
         // Register the commonSetup method for modloading
         modEventBus.addListener(this::commonSetup);
 
-
+        // Register entities
+        ModEntities.ENTITIES.register(modEventBus);
 
         // Register ourselves for server and other game events we are interested in
         MinecraftForge.EVENT_BUS.register(this);
@@ -70,6 +72,9 @@ public class TouhouHisoutensoku
     {
         // Do something when the server starts
         LOGGER.info("HELLO from server starting");
+        
+        // Register laser command
+        com.Icedreammoon.TouhouHisoutensoku.command.LaserCommand.register(event.getServer().getCommands().getDispatcher());
     }
 
     // You can use EventBusSubscriber to automatically register all static methods in the class annotated with @SubscribeEvent
