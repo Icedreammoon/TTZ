@@ -86,5 +86,12 @@ public class TouhouHisoutensoku
             LOGGER.info("HELLO FROM CLIENT SETUP");
             LOGGER.info("MINECRAFT NAME >> {}", Minecraft.getInstance().getUser().getName());
         }
+        
+        @SubscribeEvent
+        public static void registerRenderers(net.minecraftforge.client.event.EntityRenderersEvent.RegisterRenderers event) {
+            // 注册 MasterSpark 渲染器
+            event.registerEntityRenderer(com.Icedreammoon.TouhouHisoutensoku.init.ModEntities.MASTER_SPARK.get(), 
+                com.Icedreammoon.TouhouHisoutensoku.client.render.entity.Master_Spark_Renderer::new);
+        }
     }
 }

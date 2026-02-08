@@ -1,7 +1,7 @@
 package com.Icedreammoon.TouhouHisoutensoku.event;
 
 import com.Icedreammoon.TouhouHisoutensoku.init.ModEntities;
-import com.Icedreammoon.TouhouHisoutensoku.entity.Marisa.MasterSpark;
+import com.Icedreammoon.TouhouHisoutensoku.entity.Marisa.MasterSpark_Entity;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.event.entity.player.PlayerInteractEvent;
@@ -12,19 +12,21 @@ import net.minecraftforge.fml.common.Mod;
 public class ModEvents {
 
     @SubscribeEvent
-    public static void onRightClick(PlayerInteractEvent event) {
-        // 只处理主手右键点击
-        if (event.getHand() == InteractionHand.MAIN_HAND) {
-            Player player = event.getEntity();
-            
-            // 检查玩家是否空手
-            if (player.getMainHandItem().isEmpty()) {
-                // 无论右键空气还是右键方块都触发激光
-                spawnMasterSpark(player);
-            }
-        }
+    public static void onRightClickAir(PlayerInteractEvent.RightClickEmpty event) {
+        handleRightClick(event.getEntity(), event.getHand());
     }
 
+    @SubscribeEvent
+    public static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
+        handleRightClick(event.getEntity(), event.getHand());
+    }
+
+    private static void handleRightClick(Player player, InteractionHand hand) {
+        // 只处理主手 + 空手
+        if (hand == InteractionHand.MAIN_HAND && player.getMainHandItem().isEmpty()) {
+            spawnMasterSpark(player);
+        }
+    }
     private static void spawnMasterSpark(Player player) {
         if (!player.level().isClientSide) {
             // 计算激光的初始位置（玩家眼睛高度）
@@ -37,7 +39,7 @@ public class ModEvents {
             float pitch = (float) (-player.getXRot() * Math.PI / 180.0d);
 
             // 创建激光实体
-            MasterSpark masterSpark = new MasterSpark(
+            MasterSpark_Entity masterSpark = new MasterSpark_Entity(
                     ModEntities.MASTER_SPARK.get(),
                     player.level(),
                     player,

@@ -1,4 +1,4 @@
-package com.Icedreammoon.TouhouHisoutensoku.tool;
+package com.Icedreammoon.TouhouHisoutensoku.client.tool;
 
 /**
  * This is a timer that can be used to easily animate models between poses. You have to set the number of

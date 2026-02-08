@@ -1,6 +1,6 @@
 package com.Icedreammoon.TouhouHisoutensoku.entity.Marisa;
 
-import com.Icedreammoon.TouhouHisoutensoku.tool.ControlledAnimation;
+import com.Icedreammoon.TouhouHisoutensoku.client.tool.ControlledAnimation;
 import com.Icedreammoon.TouhouHisoutensoku.utils.TTZDamageTypes;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -30,7 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public class MasterSpark extends Entity {
+public class MasterSpark_Entity extends Entity {
     public static final double MAX_DISTANCE = 64;
     public LivingEntity caster; // 施法者（生物实体，BOSS/怪物）
     public double endPosX, endPosY, endPosZ; // 激光「理论终点」（最大射程处，无遮挡时的位置）
@@ -43,30 +43,41 @@ public class MasterSpark extends Entity {
     public ControlledAnimation appear = new ControlledAnimation(20);
 
     // 旋转角度（服务端计算，同步给客户端用于渲染/终点计算）
-    private static final EntityDataAccessor<Float> YAW = SynchedEntityData.defineId(MasterSpark.class, net.minecraft.network.syncher.EntityDataSerializers.FLOAT);
-    private static final EntityDataAccessor<Float> PITCH = SynchedEntityData.defineId(MasterSpark.class, net.minecraft.network.syncher.EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<Float> YAW = SynchedEntityData.defineId(MasterSpark_Entity.class, net.minecraft.network.syncher.EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<Float> PITCH = SynchedEntityData.defineId(MasterSpark_Entity.class, net.minecraft.network.syncher.EntityDataSerializers.FLOAT);
     // 激光持续时间（帧数，控制激光存活时长）
-    private static final EntityDataAccessor<Integer> DURATION = SynchedEntityData.defineId(MasterSpark.class, net.minecraft.network.syncher.EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Integer> DURATION = SynchedEntityData.defineId(MasterSpark_Entity.class, net.minecraft.network.syncher.EntityDataSerializers.INT);
     // 施法者ID（客户端无法直接持有实体引用，通过ID获取施法者）
-    private static final EntityDataAccessor<Integer> CASTER = SynchedEntityData.defineId(MasterSpark.class, net.minecraft.network.syncher.EntityDataSerializers.INT);
+    private static final EntityDataAccessor<Integer> CASTER = SynchedEntityData.defineId(MasterSpark_Entity.class, net.minecraft.network.syncher.EntityDataSerializers.INT);
     // 基础伤害（固定值）
-    private static final EntityDataAccessor<Float> DAMAGE = SynchedEntityData.defineId(MasterSpark.class, net.minecraft.network.syncher.EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<Float> DAMAGE = SynchedEntityData.defineId(MasterSpark_Entity.class, net.minecraft.network.syncher.EntityDataSerializers.FLOAT);
     // 百分比伤害（基于目标最大生命值，%值）
-    private static final EntityDataAccessor<Float> HPDAMAGE = SynchedEntityData.defineId(MasterSpark.class, net.minecraft.network.syncher.EntityDataSerializers.FLOAT);
+    private static final EntityDataAccessor<Float> HPDAMAGE = SynchedEntityData.defineId(MasterSpark_Entity.class, net.minecraft.network.syncher.EntityDataSerializers.FLOAT);
 
     @OnlyIn(Dist.CLIENT)
     private Vec3[] attractorPos; // 粒子吸引点位置（用于激光粒子的聚合效果，客户端视觉专属）
 
-    public MasterSpark(EntityType<? extends MasterSpark> type, Level world) {
+    public MasterSpark_Entity(EntityType<? extends MasterSpark_Entity> type, Level world) {
         super(type,world);
         noCulling = true;
+        // 初始化碰撞位置变量
+        collidePosX = 0;
+        collidePosY = 0;
+        collidePosZ = 0;
+        prevCollidePosX = 0;
+        prevCollidePosY = 0;
+        prevCollidePosZ = 0;
+        renderYaw = 0;
+        renderPitch = 0;
+        prevYaw = 0;
+        prevPitch = 0;
         if (world.isClientSide) {
             attractorPos = new Vec3[] {new Vec3(0, 0, 0)}; // 客户端仅初始化粒子属性
         }
     }
-    public MasterSpark(EntityType<? extends MasterSpark> type, Level world, LivingEntity caster,
-                                   double x, double y, double z, float yaw, float pitch,
-                                   int duration,float damage,float Hpdamage) {
+    public MasterSpark_Entity(EntityType<? extends MasterSpark_Entity> type, Level world, LivingEntity caster,
+                              double x, double y, double z, float yaw, float pitch,
+                              int duration, float damage, float Hpdamage) {
         this(type, world); // 调用无参构造，初始化基础属性
         this.caster = caster; // 赋值施法者（服务端唯一持有，客户端后续通过ID获取）
         this.setYaw(yaw); // 设置同步属性：偏航角
@@ -76,6 +87,13 @@ public class MasterSpark extends Entity {
         this.setDamage(damage); // 设置同步属性：基础伤害
         this.setHpDamage(Hpdamage); // 设置同步属性：百分比伤害
         this.calculateEndPos(); // 计算激光初始理论终点
+        // 初始化碰撞位置为理论终点
+        this.collidePosX = this.endPosX;
+        this.collidePosY = this.endPosY;
+        this.collidePosZ = this.endPosZ;
+        this.prevCollidePosX = this.collidePosX;
+        this.prevCollidePosY = this.collidePosY;
+        this.prevCollidePosZ = this.collidePosZ;
         if (!world.isClientSide) {
             this.setCasterID(caster.getId()); // 服务端仅同步施法者ID，客户端不执行
         }
