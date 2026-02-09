@@ -40,7 +40,7 @@ public class MasterSpark_Entity extends Entity {
     public float prevYaw, prevPitch; // 上一帧渲染角度（平滑渲染）
     public boolean on = true; // 激光开启状态（核心开关，控制逻辑执行）
     public Direction blockSide = null; // 碰撞到的方块朝向（用于粒子生成/方块交互的精准定位）
-    public ControlledAnimation appear = new ControlledAnimation(20);
+    public ControlledAnimation appear = new ControlledAnimation(3);
 
     // 旋转角度（服务端计算，同步给客户端用于渲染/终点计算）
     private static final EntityDataAccessor<Float> YAW = SynchedEntityData.defineId(MasterSpark_Entity.class, net.minecraft.network.syncher.EntityDataSerializers.FLOAT);
@@ -57,24 +57,16 @@ public class MasterSpark_Entity extends Entity {
     @OnlyIn(Dist.CLIENT)
     private Vec3[] attractorPos; // 粒子吸引点位置（用于激光粒子的聚合效果，客户端视觉专属）
 
-    public MasterSpark_Entity(EntityType<? extends MasterSpark_Entity> type, Level world) {
-        super(type,world);
+    public MasterSpark_Entity(EntityType<? extends MasterSpark_Entity> type,Level world){
+        super(type, world);
         noCulling = true;
-        // 初始化碰撞位置变量
-        collidePosX = 0;
-        collidePosY = 0;
-        collidePosZ = 0;
-        prevCollidePosX = 0;
-        prevCollidePosY = 0;
-        prevCollidePosZ = 0;
-        renderYaw = 0;
-        renderPitch = 0;
-        prevYaw = 0;
-        prevPitch = 0;
-        if (world.isClientSide) {
-            attractorPos = new Vec3[] {new Vec3(0, 0, 0)}; // 客户端仅初始化粒子属性
+        if (world.isClientSide){
+            attractorPos = new Vec3[]{
+                new Vec3(0, 0, 0)
+            };
         }
     }
+
     public MasterSpark_Entity(EntityType<? extends MasterSpark_Entity> type, Level world, LivingEntity caster,
                               double x, double y, double z, float yaw, float pitch,
                               int duration, float damage, float Hpdamage) {
@@ -144,7 +136,7 @@ public class MasterSpark_Entity extends Entity {
         if (caster != null && !caster.isAlive()) discard();
 
         // 步骤8：激光核心逻辑（20帧预热后执行，避免创建时的误判）
-        if (tickCount > 20) {
+        if (tickCount > 20 && on) {
             this.calculateEndPos(); // 实时计算激光理论终点（跟随施法者角度变化）
             // 射线检测：获取激光路径上的实体/方块碰撞结果
 

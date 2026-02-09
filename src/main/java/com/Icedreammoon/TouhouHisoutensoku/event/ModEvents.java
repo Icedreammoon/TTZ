@@ -46,7 +46,7 @@ public class ModEvents {
                     x, y, z,
                     yaw,
                     pitch,
-                    100, // 持续时间（ticks）
+                    60, // 持续时间（ticks）
                     5.0f, // 基础伤害
                     5.0f // 生命值百分比伤害
             );

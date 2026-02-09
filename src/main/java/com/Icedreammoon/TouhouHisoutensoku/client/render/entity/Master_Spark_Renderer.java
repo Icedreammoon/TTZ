@@ -111,10 +111,10 @@ public class Master_Spark_Renderer extends EntityRenderer<MasterSpark_Entity> {
 
         float offset = clearerView ? -1:0;
 
-        drawVertex(matrix4f,matrix3f,builder,-BEAM_RADIUS,offset,0,minU,minV,1,packedLightIn);
-        drawVertex(matrix4f,matrix3f,builder,-BEAM_RADIUS,length,0,maxU,maxV,1,packedLightIn);
-        drawVertex(matrix4f,matrix3f,builder,BEAM_RADIUS,offset,0,maxU,maxV,1,packedLightIn);
-        drawVertex(matrix4f,matrix3f,builder,BEAM_RADIUS,length,0,maxU,maxV,1,packedLightIn);
+        drawVertex(matrix4f, matrix3f, builder, -BEAM_RADIUS, offset, 0, minU, minV, 1, packedLightIn);
+        drawVertex(matrix4f, matrix3f, builder, -BEAM_RADIUS, length, 0, minU, maxV, 1, packedLightIn);
+        drawVertex(matrix4f, matrix3f, builder, BEAM_RADIUS, length, 0, maxU, maxV, 1, packedLightIn);
+        drawVertex(matrix4f, matrix3f, builder, BEAM_RADIUS, offset, 0, maxU, minV, 1, packedLightIn);
     }
 
     private void renderQuad(int frame,PoseStack matrixStackIn, VertexConsumer builder, int packedLightIn) {
