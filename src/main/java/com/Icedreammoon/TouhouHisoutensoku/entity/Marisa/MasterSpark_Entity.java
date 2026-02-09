@@ -132,7 +132,6 @@ public class MasterSpark_Entity extends Entity {
             appear.decreaseTimer(); // 渐隐
         }
 
-        // 步骤7：施法者死亡 → 立即销毁激光（安全兜底，避免无主激光存在）
         if (caster != null && !caster.isAlive()) discard();
 
         // 步骤8：激光核心逻辑（20帧预热后执行，避免创建时的误判）
