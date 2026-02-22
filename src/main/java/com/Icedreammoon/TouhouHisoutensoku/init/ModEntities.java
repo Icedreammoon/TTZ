@@ -2,6 +2,7 @@ package com.Icedreammoon.TouhouHisoutensoku.init;
 
 import com.Icedreammoon.TouhouHisoutensoku.TouhouHisoutensoku;
 import com.Icedreammoon.TouhouHisoutensoku.entity.Marisa.MasterSpark_Entity;
+import com.Icedreammoon.TouhouHisoutensoku.entity.Marisa.Star;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.MobCategory;
 import net.minecraftforge.registries.DeferredRegister;
@@ -18,4 +19,12 @@ public class ModEntities {
                     .fireImmune()
                     .updateInterval(1)
                     .build("master_spark"));
+    public static final RegistryObject<EntityType<Star>> STAR = ENTITIES.register("star",
+            () -> EntityType.Builder.<Star>of(Star::new,MobCategory.MISC)
+                    .sized(0.3F,0.3F)
+                    .clientTrackingRange(64)
+                    .fireImmune()
+                    .updateInterval(1)
+                    .build("star"));
+
 }

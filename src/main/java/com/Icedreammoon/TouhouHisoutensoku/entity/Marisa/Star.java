@@ -1,7 +1,9 @@
 package com.Icedreammoon.TouhouHisoutensoku.entity.Marisa;
 
+import com.Icedreammoon.TouhouHisoutensoku.init.ModEntities;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.syncher.EntityDataAccessor;
+import net.minecraft.network.syncher.EntityDataSerializer;
 import net.minecraft.network.syncher.EntityDataSerializers;
 import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.world.entity.Entity;
@@ -34,10 +36,19 @@ public class Star extends Projectile {
 
     public Star(EntityType<? extends Star> type, Level world) {
         super(type, world);
-        if (world.isClientSide) {
-            attractorPos = new Vec3[]{new Vec3(0.0D, 0.0D, 0.0D)};
-        }
         this.acceleration = 0.1F;
+    }
+
+    public Star(Level world, LivingEntity entity) {
+        this(ModEntities.STAR.get(), world);
+        this.setOwner(entity);
+    }
+
+    public Star(EntityType<? extends Star> type,double x, double y, double z, Vec3 vec3,Level world) {
+        this(type, world);
+        this.moveTo(x, y, z,this.getYRot(), this.getXRot());
+        this.reapplyPosition();
+        this.
     }
 
     public Star(EntityType<? extends Star> type,LivingEntity caster double x, double y, double z, Level world){
