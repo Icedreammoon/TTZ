@@ -7,6 +7,7 @@ import net.minecraft.network.syncher.SynchedEntityData;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.EntityType;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.projectile.Projectile;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.minecraftforge.api.distmarker.Dist;
@@ -15,10 +16,11 @@ import net.minecraftforge.api.distmarker.OnlyIn;
 import javax.annotation.Nullable;
 import java.util.UUID;
 
-public class Star extends Entity {
+public class Star extends Projectile {
 
 
     public double acceleration = 0.5F;
+    private Entity caster;
     @Nullable
     private Entity target;
     @Nullable
@@ -31,14 +33,17 @@ public class Star extends Entity {
     @OnlyIn(Dist.CLIENT)
     private Vec3[] attractorPos;
 
-    public Star(EntityType<? extends     Star> type, Level world) {
+    public Star(EntityType<? extends Star> type, Level world) {
         super(type, world);
         if (world.isClientSide) {
             attractorPos = new Vec3[]{new Vec3(0.0D, 0.0D, 0.0D)};
         }
+        this.acceleration = 0.1F;
     }
 
-    public Star(EntityType<? extends Star> type, LivingEntity caster, float x, float y, float z, Level world){
+    public Star(EntityType<? extends Star> type,LivingEntity caster double x, double y, double z, Level world){
+        this(type, world);
+        this.setPos(x, y, z);
 
     }
 
@@ -82,6 +87,6 @@ public class Star extends Entity {
         if(tag.contains("acceleration",6)) {
             this.acceleration = tag.getDouble("acceleration");
         }
-
     }
+
 }
