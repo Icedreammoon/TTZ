@@ -20,7 +20,6 @@ public class Star extends Projectile {
 
 
     public double acceleration = 0.5F;
-    private Entity caster;
     @Nullable
     private Entity target;
     @Nullable
@@ -43,7 +42,7 @@ public class Star extends Projectile {
 
     public Star(EntityType<? extends Star> type,LivingEntity caster double x, double y, double z, Level world){
         this(type, world);
-        this.setPos(x, y, z);
+
 
     }
 
