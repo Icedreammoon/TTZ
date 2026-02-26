@@ -28,7 +28,7 @@ import java.util.UUID;
 
 public class Star extends Projectile {
     private boolean stopHoming = false;
-    private static double Max_Speed = 2.0D;
+    private static final double Max_Speed = 2.0D;
     public double acceleration = 0.5F;
     @Nullable
     private Entity target;
@@ -46,7 +46,7 @@ public class Star extends Projectile {
         super(type, world);
         this.setDeltaMovement(new Vec3(0, 0, 0.5));
         this.hasImpulse = true;
-        this.acceleration = 0.1F;
+        this.acceleration = 0.5F;
     }
 
     public Star(Level world, LivingEntity caster) {
@@ -64,7 +64,7 @@ public class Star extends Projectile {
     }
 
     public Star(LivingEntity caster,LivingEntity target,Level world,Vec3 vec3, float damage,int duration) {
-        this(ModEntities.STAR.get(),world);
+        this(ModEntities.STAR.get(),caster.getX(),caster.getY(),caster.getZ(),vec3,world);
         this.setOwner(caster);
         this.target = target;
         this.setDamage(damage);
@@ -182,7 +182,7 @@ public class Star extends Projectile {
 
     public void tick(){
         Entity caster = this.getOwner();
-        if(this.level().isClientSide || this.level().hasChunkAt(this.blockPosition())) {
+        if(this.level().isClientSide || (caster == null || !caster.isRemoved()) && this.level().hasChunkAt(this.blockPosition())) {
             super.tick();
             HitResult hitResult = ProjectileUtil.getHitResultOnMoveVector(this,this::canHitEntity);
             if(hitResult.getType() != HitResult.Type.MISS && !net.minecraftforge.event.ForgeEventFactory.onProjectileImpact(this,hitResult)) {
@@ -210,20 +210,23 @@ public class Star extends Projectile {
                 f = 0.9F;
             }
 
-            if(currentSpeed < Max_Speed * f) {
-                Vec3 newvec = vec3.add(vec3.normalize().scale(this.acceleration));
-                double newspeed = newvec.length();
-                if (newspeed > Max_Speed * f) {
-                    newvec = newvec.normalize().scale(Max_Speed).scale((double) f);
+            double maxSpeed = Max_Speed * f;
+            if (currentSpeed < maxSpeed) {
+                Vec3 newVec = vec3.add(vec3.normalize().scale(this.acceleration)).scale(f);
+                if (newVec.length() > maxSpeed) {
+                    newVec = newVec.normalize().scale(maxSpeed);
                 }
-                this.setDeltaMovement(newvec);
-            }
-            else {
-                this.setDeltaMovement(vec3.normalize().scale(Max_Speed).scale((double) f));
+                this.setDeltaMovement(newVec);
+            } else {
+                this.setDeltaMovement(vec3.normalize().scale(maxSpeed));
                 this.stopHoming = true;
             }
-            this.setPos(newx,newy,newz);
+
+            this.setPos(newx, newy, newz);
+        } else {
+            this.discard();
         }
+
         if(!this.stopHoming && !this.level().isClientSide) {
             if(this.target == null && this.targetID != null) {
                 this.target = ((ServerLevel)this.level()).getEntity(this.targetID);
@@ -231,15 +234,30 @@ public class Star extends Projectile {
                     this.targetID = null;
                 }
             }
-            if(this.target != null && !this.target.isAlive() && !(this.target instanceof Marisa)) {
+            if(this.target != null && this.target.isAlive() && !(this.target instanceof Marisa)) {
                 Vec3 targetPos = new Vec3(
                         this.target.getX(),
                         this.target.getY(0.5),
                         this.target.getZ()
                 );
+                Vec3 toTarget = targetPos.subtract(this.position());
+                Vec3 currentVec =this.getDeltaMovement();
+                double distance = toTarget.length();
+                if(distance >0.1){
+                    double homingstrength = 0.5D;
+                    Vec3 currentDir = toTarget.normalize();
+                    Vec3 newDir = currentVec.normalize().scale(1.0 - homingstrength)
+                            .add(currentDir.scale(homingstrength))
+                            .normalize()
+                            .scale(currentVec.length());
+                    this.assignDirectionalMovement(newDir,this.getInertia());
 
-
+                }
             }
+            else {
+                stopHoming = true;
+            }
+
         }
 
         if(tickCount > getDuration()){
